@@ -18,7 +18,13 @@ import {
   slugSchema,
   randomId,
 } from '@accessforge/validation';
-import { BadRequest, Conflict, Unauthorized, type AppDeps } from './context.js';
+import {
+  BadRequest,
+  Conflict,
+  Unauthorized,
+  rethrowUniqueViolationAsConflict,
+  type AppDeps,
+} from './context.js';
 import { hashPassword, verifyPassword } from '@accessforge/auth';
 import { issueSession, setSessionCookie, clearSessionCookie } from './sessions.js';
 import type { Repositories } from '../db/repositories.js';
@@ -50,14 +56,6 @@ const registerBody = (body: unknown) => {
     orgSlug: slug.data,
   };
 };
-
-/** Map a Postgres unique-constraint race (code 23505) to a 409 instead of a 500. */
-function rethrowUniqueViolationAsConflict(err: unknown): never {
-  if (typeof err === 'object' && err !== null && (err as { code?: unknown }).code === '23505') {
-    throw new Conflict('email or organization slug already taken');
-  }
-  throw err;
-}
 
 const loginBody = (body: unknown) => {
   if (typeof body !== 'object' || body === null) return null;

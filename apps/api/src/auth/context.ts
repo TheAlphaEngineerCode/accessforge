@@ -73,4 +73,15 @@ export class Conflict extends Error {
   }
 }
 
+/**
+ * Map a Postgres unique-constraint violation (code 23505) to a 409. Handlers
+ * pre-check for friendly messages; this covers the race between check and insert.
+ */
+export function rethrowUniqueViolationAsConflict(err: unknown): never {
+  if (typeof err === 'object' && err !== null && (err as { code?: unknown }).code === '23505') {
+    throw new Conflict('resource already exists');
+  }
+  throw err;
+}
+
 export type { Session, User, UserId, Role, OrganizationId };

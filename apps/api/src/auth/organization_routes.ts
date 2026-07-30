@@ -3,7 +3,7 @@
  */
 import type { FastifyInstance } from 'fastify';
 import type { AppDeps } from './context.js';
-import { BadRequest, Forbidden, Unauthorized } from './context.js';
+import { BadRequest, Conflict, Unauthorized, rethrowUniqueViolationAsConflict } from './context.js';
 import { slugSchema, displayNameSchema } from '@accessforge/validation';
 import type { Repositories } from '../db/repositories.js';
 
@@ -42,18 +42,20 @@ export function organizationRoutes(opts: OrgRoutesDeps): (app: FastifyInstance) 
       const body = createBody(request.body);
       if (!body) throw new BadRequest('invalid payload');
       const existing = await repos.organizations.findBySlug(body.slug);
-      if (existing) throw new Forbidden('org slug taken');
+      if (existing) throw new Conflict('organization slug already taken');
 
       const userId = request.auth.user.id;
-      const org = await repos.withTransaction(async (tx) => {
-        const created = await tx.organizations.insert({ name: body.name, slug: body.slug });
-        await tx.memberships.insert({
-          organizationId: created.id,
-          userId,
-          role: 'OWNER',
-        });
-        return created;
-      });
+      const org = await repos
+        .withTransaction(async (tx) => {
+          const created = await tx.organizations.insert({ name: body.name, slug: body.slug });
+          await tx.memberships.insert({
+            organizationId: created.id,
+            userId,
+            role: 'OWNER',
+          });
+          return created;
+        })
+        .catch(rethrowUniqueViolationAsConflict);
 
       request.auditPatch = {
         action: 'organization.created',
