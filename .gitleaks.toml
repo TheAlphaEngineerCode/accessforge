@@ -1,0 +1,13 @@
+# Gitleaks configuration — extends the default ruleset.
+#
+# The only allowlisted findings are the deliberate fixture credentials used by
+# the API test suite and the documented demo seed. They are not real secrets;
+# both strings are published in this repository on purpose.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Deliberate test/seed fixture passwords (documented, not secrets)"
+regexTarget = "line"
+regexes = ['''S3cur3-Forge-[A-Za-z-]+''', '''AccessForge-Demo-12345!''']
