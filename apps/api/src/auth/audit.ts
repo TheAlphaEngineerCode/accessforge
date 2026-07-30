@@ -11,6 +11,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { OrganizationId } from '@accessforge/domain';
 import type { AppDeps } from './context.js';
 import { correlationFromRequest } from './sessions.js';
 import type { Repositories } from '../db/repositories.js';
@@ -29,7 +30,7 @@ declare module 'fastify' {
        * where the tenant middleware ran with no session yet still wants the row
        * to land under the newly-created org.
        */
-      organizationId?: string;
+      organizationId?: OrganizationId;
     };
     /** Set by `auditPreHandler`. Internal — do not read in handlers. */
     _cloudCorrelation?: string;
@@ -79,7 +80,7 @@ export function auditOnSend(
     const ip = request._cloudIp ?? null;
     try {
       await repos.audit.insert({
-        organizationId: (patch.organizationId as never) ?? cloud?.tenant?.organizationId ?? null,
+        organizationId: patch.organizationId ?? cloud?.tenant?.organizationId ?? null,
         actorId: cloud?.user?.id ?? null,
         action: patch.action,
         resourceType: patch.resourceType ?? null,
@@ -91,10 +92,7 @@ export function auditOnSend(
       });
     } catch (err) {
       // Audit failure must never block the actual response.
-      console.error(
-        '[cloud] audit write failed:',
-        err instanceof Error ? err.message : err,
-      );
+      console.error('[accessforge] audit write failed:', err instanceof Error ? err.message : err);
     }
     return payload;
   };

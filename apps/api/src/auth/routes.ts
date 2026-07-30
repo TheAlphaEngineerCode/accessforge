@@ -18,12 +18,7 @@ import {
   slugSchema,
   randomId,
 } from '@accessforge/validation';
-import {
-  BadRequest,
-  Conflict,
-  Unauthorized,
-  type AppDeps,
-} from './context.js';
+import { BadRequest, Conflict, Unauthorized, type AppDeps } from './context.js';
 import { hashPassword, verifyPassword } from '@accessforge/auth';
 import { issueSession, setSessionCookie, clearSessionCookie } from './sessions.js';
 import type { Repositories } from '../db/repositories.js';
@@ -38,7 +33,13 @@ const registerBody = (body: unknown) => {
   const displayName = displayNameSchema.safeParse(b.displayName);
   const orgName = displayNameSchema.safeParse(b.orgName ?? b['org_name']);
   const slug = slugSchema.safeParse(b.orgSlug ?? b['org_slug']);
-  if (!email.success || !password.success || !displayName.success || !orgName.success || !slug.success) {
+  if (
+    !email.success ||
+    !password.success ||
+    !displayName.success ||
+    !orgName.success ||
+    !slug.success
+  ) {
     return null;
   }
   return {
@@ -67,8 +68,18 @@ export interface AuthRoutesDeps {
 
 export function authRoutes(opts: AuthRoutesDeps): (app: FastifyInstance) => void {
   const { deps, repos, bus } = opts;
+  // Tighter per-route bucket for the credential-guessing surface; overrides the
+  // global @fastify/rate-limit registration in server.ts.
+  const authRateLimit = {
+    config: {
+      rateLimit: {
+        max: deps.rateLimitAuthMax,
+        timeWindow: `${deps.rateLimitAuthWindowSeconds} seconds`,
+      },
+    },
+  };
   return (app) => {
-    app.post('/auth/register', async (request, reply) => {
+    app.post('/auth/register', authRateLimit, async (request, reply) => {
       const body = registerBody(request.body);
       if (!body) throw new BadRequest('invalid registration payload');
 
@@ -132,7 +143,7 @@ export function authRoutes(opts: AuthRoutesDeps): (app: FastifyInstance) => void
       });
     });
 
-    app.post('/auth/login', async (request, reply) => {
+    app.post('/auth/login', authRateLimit, async (request, reply) => {
       const body = loginBody(request.body);
       if (!body) throw new BadRequest('invalid login payload');
       const user = await repos.users.findByEmail(body.email);
@@ -163,21 +174,23 @@ export function authRoutes(opts: AuthRoutesDeps): (app: FastifyInstance) => void
         after: { sessionId: session.id, organizationId: firstMembership?.organizationId ?? null },
       };
 
-      await bus.publish(
-        buildEvent({
-          id: eventId(randomUUID()),
-          type: 'user.login',
-          organizationId: firstMembership
-            ? organizationId(firstMembership.organizationId)
-            : organizationId(randomId()),
-          source: 'auth',
-          entityId: user.id,
-          correlationId: request._cloudCorrelation ?? randomId('corr'),
-          causationId: null,
-          occurredAt: new Date(),
-          payload: { userId: user.id, sessionId: session.id },
-        }),
-      );
+      // The event envelope is tenant-scoped; a user with no membership yet has no
+      // tenant to attribute the login to, so no event is published for that edge.
+      if (firstMembership) {
+        await bus.publish(
+          buildEvent({
+            id: eventId(randomUUID()),
+            type: 'user.login',
+            organizationId: organizationId(firstMembership.organizationId),
+            source: 'auth',
+            entityId: user.id,
+            correlationId: request._cloudCorrelation ?? randomId('corr'),
+            causationId: null,
+            occurredAt: new Date(),
+            payload: { userId: user.id, sessionId: session.id },
+          }),
+        );
+      }
 
       return reply.code(200).send({
         user: { id: user.id, email: user.email, displayName: user.displayName },

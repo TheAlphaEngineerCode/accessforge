@@ -109,10 +109,7 @@ const ROLES: Readonly<Record<Role, PermSet>> = {
   ]),
 };
 
-export function can(
-  role: Role | null | undefined,
-  permission: Permission,
-): boolean {
+export function can(role: Role | null | undefined, permission: Permission): boolean {
   if (!role) return false;
   const set = ROLES[role];
   return set ? set.has(permission) : false;
@@ -122,17 +119,11 @@ export function permissionsFor(role: Role): ReadonlySet<Permission> {
   return ROLES[role] ?? new Set<Permission>();
 }
 
-export function canAny(
-  role: Role | null | undefined,
-  permissions: readonly Permission[],
-): boolean {
+export function canAny(role: Role | null | undefined, permissions: readonly Permission[]): boolean {
   return permissions.some((p) => can(role, p));
 }
 
-export function canAll(
-  role: Role | null | undefined,
-  permissions: readonly Permission[],
-): boolean {
+export function canAll(role: Role | null | undefined, permissions: readonly Permission[]): boolean {
   return permissions.every((p) => can(role, p));
 }
 

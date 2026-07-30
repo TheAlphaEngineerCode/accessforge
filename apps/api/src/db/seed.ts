@@ -17,23 +17,29 @@ const SEED_USER_PASSWORD = 'AccessForge-Demo-12345!';
 const DEMO_PROJECTS = [
   {
     name: 'Accessible Store',
-    description: 'Demo e-commerce application with intentional accessibility best practices — used for regression-detection baselines.',
+    description:
+      'Demo e-commerce application with intentional accessibility best practices — used for regression-detection baselines.',
     baseUrl: 'https://accessible-store.accessforge.test',
-    repositoryUrl: 'https://github.com/TheAlphaEngineerCode/accessforge/tree/main/examples/accessible-store',
+    repositoryUrl:
+      'https://github.com/TheAlphaEngineerCode/accessforge/tree/main/examples/accessible-store',
     defaultBranch: 'main',
   },
   {
     name: 'Broken Commerce',
-    description: 'Demo commerce application with intentional accessibility violations — unlabeled forms, broken focus order, inaccessible modals — for journey and rule testing.',
+    description:
+      'Demo commerce application with intentional accessibility violations — unlabeled forms, broken focus order, inaccessible modals — for journey and rule testing.',
     baseUrl: 'https://broken-commerce.accessforge.test',
-    repositoryUrl: 'https://github.com/TheAlphaEngineerCode/accessforge/tree/main/examples/broken-commerce',
+    repositoryUrl:
+      'https://github.com/TheAlphaEngineerCode/accessforge/tree/main/examples/broken-commerce',
     defaultBranch: 'main',
   },
   {
     name: 'SaaS Dashboard',
-    description: 'Internal dashboard application used for dashboard-specific accessibility rules (tables, dynamic content, live regions).',
+    description:
+      'Internal dashboard application used for dashboard-specific accessibility rules (tables, dynamic content, live regions).',
     baseUrl: 'https://saas-dashboard.accessforge.test',
-    repositoryUrl: 'https://github.com/TheAlphaEngineerCode/accessforge/tree/main/examples/saas-dashboard',
+    repositoryUrl:
+      'https://github.com/TheAlphaEngineerCode/accessforge/tree/main/examples/saas-dashboard',
     defaultBranch: 'main',
   },
 ] as const;
@@ -79,10 +85,11 @@ export async function seedDemo(pool: TypedPool): Promise<SeedResult> {
 
   const projectIds: string[] = [];
   await pool.transaction(async (tx) => {
-    await tx.execute(
-      `INSERT INTO organizations (id, name, slug) VALUES ($1, $2, $3)`,
-      [orgId, SEED_ORG_NAME, SEED_ORG_SLUG],
-    );
+    await tx.execute(`INSERT INTO organizations (id, name, slug) VALUES ($1, $2, $3)`, [
+      orgId,
+      SEED_ORG_NAME,
+      SEED_ORG_SLUG,
+    ]);
     await tx.execute(
       `INSERT INTO users (id, email, password_hash, display_name, status)
        VALUES ($1, $2, $3, $4, 'ACTIVE')`,
@@ -150,8 +157,7 @@ async function main() {
   }
 }
 
-const invokedDirectly =
-  process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (invokedDirectly) {
   main().catch((err) => {
     console.error('seed failed:', err);

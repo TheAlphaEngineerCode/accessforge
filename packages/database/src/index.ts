@@ -38,7 +38,7 @@ export function buildPool(opts: BuildPoolOptions): Pool {
   const pool = new pg.Pool(cfg);
   pool.on('error', (err) => {
     if (opts.onConnectError) opts.onConnectError(err);
-    else console.error('[cloud] idle pg pool error:', err.message);
+    else console.error('[accessforge] idle pg pool error:', err.message);
   });
   return pool;
 }
@@ -120,10 +120,7 @@ export interface TypedPool {
     params: ReadonlyArray<unknown>,
     decoder: RowDecoder<T>,
   ): Promise<T | null>;
-  execute(
-    text: string,
-    params: ReadonlyArray<unknown>,
-  ): Promise<QueryResult>;
+  execute(text: string, params: ReadonlyArray<unknown>): Promise<QueryResult>;
   transaction<T>(fn: (tx: TypedTx) => Promise<T>): Promise<T>;
   pool: Pool;
   close(): Promise<void>;

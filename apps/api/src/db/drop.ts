@@ -28,14 +28,13 @@ async function main() {
   try {
     await dropAll(pool);
     // eslint-disable-next-line no-console
-    console.log('[cloud] schema dropped');
+    console.log('[accessforge] schema dropped');
   } finally {
     await pool.close();
   }
 }
 
-const invokedDirectly =
-  process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (invokedDirectly) {
   main().catch((err) => {
     console.error('drop failed:', err);

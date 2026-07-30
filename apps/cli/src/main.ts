@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 /**
- * `cloud` CLI entrypoint.
+ * `accessforge` CLI entrypoint.
  *
  * Phase 0 ships a `doctor` subcommand and a generic `help`. The full surface
- * (`resources list`, `apps inspect`, `topology`, `deploy`, `infra plan` …, see
- * spec §44) is wired in Phase 4+ when the inventory and deployment engines
- * exist and the platform has a typed client to talk to.
+ * (`scan`, `journeys run`, `issues list`, `baseline` …) is wired from Phase 2+
+ * when the browser engine exists and the platform has a typed client to talk to.
  */
 import { ALL_EVENT_TYPES } from '@accessforge/domain';
 
@@ -44,12 +43,11 @@ Commands available at Phase 0:
   help                Show this help
   version             Print the CLI version
   doctor              Print a basic environment/health probe
-  status              Placeholder — implemented in Phase 4
+  status              Placeholder — implemented with the scan engine
 
-Future commands (spec §44):
-  login, status, resources list, resources inspect, apps list, apps inspect,
-  deploy, deployments list, topology, clusters list, logs, incidents list,
-  costs summary, security scan, infra validate, infra plan, automation run
+Future commands:
+  login, status, projects list, scan <url>, scans list, issues list,
+  journeys list, journeys run, baseline create, baseline compare, report
 `;
 
 function main(): void {
@@ -58,29 +56,37 @@ function main(): void {
     case 'help':
     case '--help':
     case '-h':
-      console.log(HELP);
+      console.info(HELP);
       break;
     case 'version':
     case '--version':
     case '-v':
-      console.log(VERSION);
+      console.info(VERSION);
       break;
     case 'doctor':
-      console.log(JSON.stringify({
-        node: process.versions.node,
-        platform: process.platform,
-        arch: process.arch,
-        uptimeSeconds: process.uptime(),
-        envNodeEnv: process.env.NODE_ENV ?? '(unset)',
-        handledEventTypes: ALL_EVENT_TYPES.length,
-      }, null, 2));
+      console.info(
+        JSON.stringify(
+          {
+            node: process.versions.node,
+            platform: process.platform,
+            arch: process.arch,
+            uptimeSeconds: process.uptime(),
+            envNodeEnv: process.env.NODE_ENV ?? '(unset)',
+            handledEventTypes: ALL_EVENT_TYPES.length,
+          },
+          null,
+          2,
+        ),
+      );
       break;
     case 'status':
-      console.error('[cloud] status: not implemented in Phase 0 — see IMPLEMENTATION_STATUS.md');
+      console.error(
+        '[accessforge] status: not implemented in Phase 0 — see IMPLEMENTATION_STATUS.md',
+      );
       process.exitCode = 1;
       break;
     default:
-      console.error(`[cloud] unknown command: ${parsed.command}\n${HELP}`);
+      console.error(`[accessforge] unknown command: ${parsed.command}\n${HELP}`);
       process.exitCode = 2;
   }
 }

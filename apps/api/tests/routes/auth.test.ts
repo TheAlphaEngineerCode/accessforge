@@ -3,8 +3,12 @@ import { buildTestApp, register, login, type TestApp } from '../helpers/app.js';
 
 let sut: TestApp;
 
-beforeEach(async () => { sut = await buildTestApp(); });
-afterEach(async () => { await sut.close(); });
+beforeEach(async () => {
+  sut = await buildTestApp();
+});
+afterEach(async () => {
+  await sut.close();
+});
 
 const demoCredentials = {
   email: 'operator@cloud.test',
@@ -35,7 +39,7 @@ describe('auth — register', () => {
 
   it('creates a user, organization and OWNER membership, sets a session cookie', async () => {
     const registration = await register(sut.app, demoCredentials);
-    expect(registration.cookie.startsWith('cloud_session=')).toBe(true);
+    expect(registration.cookie.startsWith('accessforge_session=')).toBe(true);
     expect(registration.user.id).toMatch(/^[0-9a-f-]{36}$/i);
     expect(registration.organization.id).toMatch(/^[0-9a-f-]{36}$/i);
 
@@ -99,7 +103,7 @@ describe('auth — login', () => {
   it('returns a session cookie on success', async () => {
     await register(sut.app, demoCredentials);
     const cookie = await login(sut.app, demoCredentials.email, demoCredentials.password);
-    expect(cookie.startsWith('cloud_session=')).toBe(true);
+    expect(cookie.startsWith('accessforge_session=')).toBe(true);
   });
 });
 

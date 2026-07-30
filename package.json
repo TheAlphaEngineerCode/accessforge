@@ -2,6 +2,7 @@
   "name": "accessforge",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "description": "AccessForge — open source accessibility engineering platform for analyzing, testing, monitoring and preventing accessibility problems in web applications via Accessibility Journey Testing. Apache-2.0.",
   "license": "Apache-2.0",
   "author": "William Oliveira",

@@ -10,9 +10,10 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# pnpm version comes from the `packageManager` field in package.json —
+# pnpm/action-setup reads it, so CI and local dev can never disagree.
 env:
-  PNPM_VERSION: '11.17.0'
-  NODE_LTS: '22'      # lowest matrix version — must actually be exercised
+  NODE_LTS: '22' # lowest engine declared — must actually be exercised
   NODE_LATEST: '24'
 
 jobs:
@@ -26,8 +27,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
@@ -41,7 +40,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with: { version: ${{ env.PNPM_VERSION }} }
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_LTS }}
@@ -57,7 +55,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with: { version: ${{ env.PNPM_VERSION }} }
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_LTS }}
@@ -76,7 +73,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with: { version: ${{ env.PNPM_VERSION }} }
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
@@ -100,7 +96,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with: { version: ${{ env.PNPM_VERSION }} }
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_LATEST }}
@@ -114,14 +109,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  code-quality:
-    name: Secret scan baseline (gitleaks baseline)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: test -f .gitleaks.toml && echo "baseline present" || echo "no baseline"

@@ -5,11 +5,7 @@
  * child loggers with `log.child({ module: 'inventory' })` rather than instantiating
  * their own.
  */
-import pino, {
-  type DestinationStream,
-  type Logger,
-  type LoggerOptions,
-} from 'pino';
+import pino, { type DestinationStream, type Logger, type LoggerOptions } from 'pino';
 
 export type { Logger } from 'pino';
 
@@ -30,7 +26,7 @@ export function buildLogger(opts: BuildLoggerOptions = {}): Logger {
   const options: LoggerOptions = {
     level: opts.level ?? 'info',
     base: {
-      service: opts.service ?? 'cloud',
+      service: opts.service ?? 'accessforge',
       ...opts.base,
     },
     redact: {

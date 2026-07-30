@@ -1,6 +1,6 @@
 /**
  * Worker entrypoint — subscribes to the platform event bus and runs background
- * jobs: discovery sweeps, drift detection, automation triggers, eval tasks.
+ * jobs: scan execution, journey runs, baseline comparisons, report generation.
  *
  * Phase 0 / Phase 1: MINIMAL — the worker initializes the event bus, registers
  * a no-op subscriber for every event type (so future code can drop in concrete
@@ -11,7 +11,7 @@ import { buildLogger } from '@accessforge/logger';
 import { InMemoryEventBus, type EventBus } from '@accessforge/events';
 import { ALL_EVENT_TYPES, type EventEnvelope } from '@accessforge/domain';
 
-const log = buildLogger({ service: 'cloud-worker' });
+const log = buildLogger({ service: 'accessforge-worker' });
 
 async function main() {
   const bus: EventBus = new InMemoryEventBus();
@@ -20,7 +20,10 @@ async function main() {
   for (const type of ALL_EVENT_TYPES) {
     bus.subscribe(type, (event: EventEnvelope) => {
       processed++;
-      log.debug({ type, eventId: event.id, correlationId: event.correlationId }, 'event received (no-op)');
+      log.debug(
+        { type, eventId: event.id, correlationId: event.correlationId },
+        'event received (no-op)',
+      );
     });
   }
 

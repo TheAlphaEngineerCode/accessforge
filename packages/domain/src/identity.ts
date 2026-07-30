@@ -1,7 +1,6 @@
 import type {
   OrganizationId,
   UserId,
-  SessionId,
   ProjectId,
   EnvironmentId,
   ScanId,
@@ -20,13 +19,7 @@ import type {
  * User-facing roles (spec §53). Declared once here; the permission matrix in
  * `@accessforge/permissions` is the source of truth for what each grants.
  */
-export type Role =
-  | 'OWNER'
-  | 'ADMIN'
-  | 'ACCESSIBILITY_ENGINEER'
-  | 'DEVELOPER'
-  | 'QA'
-  | 'VIEWER';
+export type Role = 'OWNER' | 'ADMIN' | 'ACCESSIBILITY_ENGINEER' | 'DEVELOPER' | 'QA' | 'VIEWER';
 
 export const ALL_ROLES: readonly Role[] = [
   'OWNER',
@@ -294,15 +287,7 @@ export interface Journey {
 }
 
 export type JourneyAction =
-  | 'NAVIGATE'
-  | 'CLICK'
-  | 'TYPE'
-  | 'PRESS_KEY'
-  | 'SELECT'
-  | 'CHECK'
-  | 'UPLOAD'
-  | 'WAIT'
-  | 'ASSERT';
+  'NAVIGATE' | 'CLICK' | 'TYPE' | 'PRESS_KEY' | 'SELECT' | 'CHECK' | 'UPLOAD' | 'WAIT' | 'ASSERT';
 
 export const ALL_JOURNEY_ACTIONS: readonly JourneyAction[] = [
   'NAVIGATE',

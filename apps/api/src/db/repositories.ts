@@ -28,7 +28,6 @@ import type {
   Page,
   PageId,
   PageSnapshot,
-  PageSnapshotId,
   Project,
   ProjectId,
   Role,
@@ -64,7 +63,11 @@ export interface OrganizationRepository {
 
 export interface MembershipRepository {
   find(organizationId: OrganizationId, userId: UserId): Promise<Membership | null>;
-  insert(input: { organizationId: OrganizationId; userId: UserId; role: Role }): Promise<Membership>;
+  insert(input: {
+    organizationId: OrganizationId;
+    userId: UserId;
+    role: Role;
+  }): Promise<Membership>;
   listForUser(userId: UserId): Promise<readonly Membership[]>;
 }
 
@@ -95,12 +98,18 @@ export interface AuditRepository {
     ip: string | null;
     correlationId: string;
   }): Promise<AuditEvent>;
-  listForOrganization(organizationId: OrganizationId, limit: number): Promise<readonly AuditEvent[]>;
+  listForOrganization(
+    organizationId: OrganizationId,
+    limit: number,
+  ): Promise<readonly AuditEvent[]>;
 }
 
 export interface EventRepository {
   insert<T extends EventType, P>(event: EventEnvelope<T, P>): Promise<void>;
-  listForOrganization(organizationId: OrganizationId, limit: number): Promise<readonly EventEnvelope[]>;
+  listForOrganization(
+    organizationId: OrganizationId,
+    limit: number,
+  ): Promise<readonly EventEnvelope[]>;
 }
 
 export interface ProjectRepository {
@@ -125,8 +134,14 @@ export interface EnvironmentRepository {
     baseUrl: string;
     type: EnvironmentType;
   }): Promise<Environment>;
-  findById(organizationId: OrganizationId, environmentId: EnvironmentId): Promise<Environment | null>;
-  listForProject(organizationId: OrganizationId, projectId: ProjectId): Promise<readonly Environment[]>;
+  findById(
+    organizationId: OrganizationId,
+    environmentId: EnvironmentId,
+  ): Promise<Environment | null>;
+  listForProject(
+    organizationId: OrganizationId,
+    projectId: ProjectId,
+  ): Promise<readonly Environment[]>;
 }
 
 export interface ScanRepository {
@@ -141,11 +156,20 @@ export interface ScanRepository {
     createdBy: UserId | null;
   }): Promise<Scan>;
   findById(organizationId: OrganizationId, scanId: ScanId): Promise<Scan | null>;
-  listForProject(organizationId: OrganizationId, projectId: ProjectId, limit: number): Promise<readonly Scan[]>;
-  updateStatus(organizationId: OrganizationId, scanId: ScanId, status: ScanStatus, opts?: {
-    startedAt?: Date;
-    finishedAt?: Date;
-  }): Promise<void>;
+  listForProject(
+    organizationId: OrganizationId,
+    projectId: ProjectId,
+    limit: number,
+  ): Promise<readonly Scan[]>;
+  updateStatus(
+    organizationId: OrganizationId,
+    scanId: ScanId,
+    status: ScanStatus,
+    opts?: {
+      startedAt?: Date;
+      finishedAt?: Date;
+    },
+  ): Promise<void>;
 }
 
 export interface PageRepository {
@@ -215,11 +239,23 @@ export interface IssueRepository {
   }): Promise<Issue>;
   findById(organizationId: OrganizationId, issueId: IssueId): Promise<Issue | null>;
   listForScan(organizationId: OrganizationId, scanId: ScanId): Promise<readonly Issue[]>;
-  listForProject(organizationId: OrganizationId, projectId: ProjectId, limit: number): Promise<readonly Issue[]>;
-  updateStatus(organizationId: OrganizationId, issueId: IssueId, status: string, opts?: {
-    resolvedAt?: Date | null;
-  }): Promise<void>;
-  resolveManyByFingerprint(organizationId: OrganizationId, fingerprints: ReadonlyArray<string>): Promise<number>;
+  listForProject(
+    organizationId: OrganizationId,
+    projectId: ProjectId,
+    limit: number,
+  ): Promise<readonly Issue[]>;
+  updateStatus(
+    organizationId: OrganizationId,
+    issueId: IssueId,
+    status: string,
+    opts?: {
+      resolvedAt?: Date | null;
+    },
+  ): Promise<void>;
+  resolveManyByFingerprint(
+    organizationId: OrganizationId,
+    fingerprints: ReadonlyArray<string>,
+  ): Promise<number>;
 }
 
 export interface JourneyRepository {
@@ -247,7 +283,10 @@ export interface JourneyStepRepository {
     expectedOutcome: Readonly<Record<string, unknown>> | null;
     timeout: number | null;
   }): Promise<JourneyStep>;
-  listForJourney(organizationId: OrganizationId, journeyId: JourneyId): Promise<readonly JourneyStep[]>;
+  listForJourney(
+    organizationId: OrganizationId,
+    journeyId: JourneyId,
+  ): Promise<readonly JourneyStep[]>;
 }
 
 export interface Repositories {

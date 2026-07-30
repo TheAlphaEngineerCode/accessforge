@@ -12,21 +12,22 @@ import { z } from 'zod';
  */
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  LOG_LEVEL: z
-    .enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal'])
-    .default('info'),
+  LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 
   API_HOST: z.string().default('0.0.0.0'),
   API_PORT: z.coerce.number().int().positive().default(8080),
   API_PUBLIC_URL: z.string().url(),
 
-  SESSION_COOKIE_NAME: z.string().default('cloud_session'),
+  SESSION_COOKIE_NAME: z.string().default('accessforge_session'),
   SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(2592000),
   SESSION_SECRET: z.string().min(32),
 
-  CORS_ORIGINS: z
-    .string()
-    .transform((s) => s.split(',').map((o) => o.trim()).filter(Boolean)),
+  CORS_ORIGINS: z.string().transform((s) =>
+    s
+      .split(',')
+      .map((o) => o.trim())
+      .filter(Boolean),
+  ),
 
   WEB_PORT: z.coerce.number().int().positive().default(3000),
   WEB_PUBLIC_URL: z.string().url(),
@@ -55,7 +56,7 @@ export const envSchema = z.object({
   S3_FORCE_PATH_STYLE: z.coerce.boolean().default(true),
 
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().optional(),
-  OTEL_SERVICE_NAME: z.string().default('cloud'),
+  OTEL_SERVICE_NAME: z.string().default('accessforge'),
   OTEL_RESOURCE_ATTRIBUTES: z.string().default(''),
 
   RATE_LIMIT_GENERAL_MAX: z.coerce.number().int().positive().default(300),

@@ -24,7 +24,7 @@ export async function buildTestApp(bus: EventBus = new InMemoryEventBus()): Prom
   const deps: AppDeps = {
     repos,
     bus,
-    sessionCookieName: 'cloud_session',
+    sessionCookieName: 'accessforge_session',
     sessionCookieDomain: null,
     sessionCookieSecure: false,
     sessionCookieSameSite: 'lax',
@@ -64,7 +64,12 @@ export function parseSetCookies(setCookie: string | string[] | undefined): Recor
 export async function register(
   app: import('fastify').FastifyInstance,
   body: { email: string; password: string; displayName: string; orgName: string; orgSlug: string },
-): Promise<{ cookie: string; user: { id: string }; organization: { id: string }; sessionId: string }> {
+): Promise<{
+  cookie: string;
+  user: { id: string };
+  organization: { id: string };
+  sessionId: string;
+}> {
   const res = await app.inject({
     method: 'POST',
     url: '/auth/register',
@@ -72,9 +77,13 @@ export async function register(
   });
   if (res.statusCode !== 201) throw new Error(`register failed: ${res.statusCode} ${res.body}`);
   const cookies = parseSetCookies(res.headers['set-cookie']);
-  const json = JSON.parse(res.body) as { user: { id: string }; organization: { id: string }; sessionId: string };
+  const json = JSON.parse(res.body) as {
+    user: { id: string };
+    organization: { id: string };
+    sessionId: string;
+  };
   return {
-    cookie: `cloud_session=${cookies['cloud_session'] ?? ''}`,
+    cookie: `accessforge_session=${cookies['accessforge_session'] ?? ''}`,
     user: json.user,
     organization: json.organization,
     sessionId: json.sessionId,
@@ -93,5 +102,5 @@ export async function login(
   });
   if (res.statusCode !== 200) throw new Error(`login failed: ${res.statusCode} ${res.body}`);
   const cookies = parseSetCookies(res.headers['set-cookie']);
-  return `cloud_session=${cookies['cloud_session'] ?? ''}`;
+  return `accessforge_session=${cookies['accessforge_session'] ?? ''}`;
 }

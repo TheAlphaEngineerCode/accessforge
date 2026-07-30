@@ -2,13 +2,7 @@
  * Fastify application surface — the only thing handlers should need that's pre-bound on
  * `request`/`server`.
  */
-import type {
-  OrganizationId,
-  Role,
-  Session,
-  User,
-  UserId,
-} from '@accessforge/domain';
+import type { OrganizationId, Role, Session, User, UserId } from '@accessforge/domain';
 import type { EventBus } from '@accessforge/events';
 import type { Repositories } from '../db/repositories.js';
 
@@ -43,10 +37,6 @@ export interface AppDeps {
   readonly rateLimitGeneralMax: number;
   readonly rateLimitGeneralWindowSeconds: number;
 }
-
-export type Authenticatedrequest = {
-  readonly cloud: RequestContext;
-};
 
 /** Sentinel thrown by the `requireAuth` decorator on missing/invalid session. */
 export class Unauthorized extends Error {

@@ -14,12 +14,7 @@ import type { AppDeps } from './auth/context.js';
 import type { Repositories } from './db/repositories.js';
 import type { EventBus } from '@accessforge/events';
 
-import {
-  BadRequest,
-  Conflict,
-  Forbidden,
-  Unauthorized,
-} from './auth/context.js';
+import { BadRequest, Conflict, Forbidden, Unauthorized } from './auth/context.js';
 
 import { buildTenantMiddleware } from './auth/tenant_middleware.js';
 import { auditOnSend, auditPreHandler } from './auth/audit.js';
@@ -71,12 +66,12 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-Id', 'X-Request-Id'],
     exposedHeaders: ['X-Correlation-Id'],
   });
+  // Global bucket; the sensitive auth routes declare a tighter per-route
+  // `config.rateLimit` (see authRoutes) that overrides this one.
   await app.register(rateLimit, {
     global: true,
     max: deps.rateLimitGeneralMax,
     timeWindow: `${deps.rateLimitGeneralWindowSeconds} seconds`,
-    // Auth routes get their own bucket.
-    keyGenerator: (req) => (req.url.startsWith('/auth/') ? `auth:${req.ip}` : `gen:${req.ip}`),
   });
 
   if (withDocs) {
@@ -103,27 +98,19 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
   app.addHook('preHandler', buildTenantMiddleware(deps, repos));
   app.addHook('preHandler', auditPreHandler(deps));
 
-  // ─────────────────────── auth scanned routes ──────────────────────────────────
-  app.addHook('preHandler', async (request, _reply) => {
-    // Auth bucket override: limit auth routes to a tighter limit
-    if (request.url.startsWith('/auth/')) {
-      const httpServer = request.server as unknown as { _limitPerWindow?: number } | undefined;
-      // We cannot easily override per-route rate; rely on keyGenerator bucketing.
-      // Track a per-IP auth counter in fastify-rate-limit by URL prefix.
-      void httpServer;
-    }
-  });
-  // Auth routes themselves are registered next; the hook above is intentionally empty.
-
   // ─────────────────────── error responses ────────────────────────────────────
   app.setErrorHandler((err: FastifyError, request, reply) => {
     const status =
       err.statusCode ??
-      (err instanceof Unauthorized ? 401
-       : err instanceof Forbidden ? 403
-       : err instanceof BadRequest ? 400
-       : err instanceof Conflict ? 409
-       : 500);
+      (err instanceof Unauthorized
+        ? 401
+        : err instanceof Forbidden
+          ? 403
+          : err instanceof BadRequest
+            ? 400
+            : err instanceof Conflict
+              ? 409
+              : 500);
     if (status >= 500) {
       request.log?.error?.(err, 'server error');
     }
@@ -150,10 +137,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
   });
   app.get('/ready', async (_req, reply) => {
     try {
-      await repos.audit.listForOrganization(
-        '00000000-0000-0000-0000-000000000000' as never,
-        1,
-      );
+      await repos.audit.listForOrganization('00000000-0000-0000-0000-000000000000' as never, 1);
       await reply.code(200).send({ status: 'ready' });
     } catch (err) {
       await reply.code(503).send({
@@ -167,7 +151,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
     await reply
       .code(200)
       .header('content-type', 'text/plain; version=0.0.4')
-      .send('# cloud_platform_up 1\n');
+      .send('# accessforge_up 1\n');
   });
 
   return app;

@@ -81,7 +81,12 @@ import type {
 } from '../../src/db/repositories.js';
 
 const ROLES: readonly Role[] = [
-  'OWNER', 'ADMIN', 'ACCESSIBILITY_ENGINEER', 'DEVELOPER', 'QA', 'VIEWER',
+  'OWNER',
+  'ADMIN',
+  'ACCESSIBILITY_ENGINEER',
+  'DEVELOPER',
+  'QA',
+  'VIEWER',
 ] as const;
 
 function assertRole(v: unknown): Role {
@@ -112,9 +117,13 @@ class MemoryUserRepository implements UserRepository {
     const id = uid(randomUUID());
     const now = new Date();
     const user: User = {
-      id, email: input.email.toLowerCase(), passwordHash: input.passwordHash,
-      displayName: input.displayName, status: input.status ?? 'ACTIVE',
-      createdAt: now, updatedAt: now,
+      id,
+      email: input.email.toLowerCase(),
+      passwordHash: input.passwordHash,
+      displayName: input.displayName,
+      status: input.status ?? 'ACTIVE',
+      createdAt: now,
+      updatedAt: now,
     };
     this.users.set(id, user);
     this.byEmail.set(user.email, id);
@@ -138,8 +147,12 @@ class MemoryMembershipRepository implements MembershipRepository {
     const id = randomUUID();
     const now = new Date();
     const m: Membership = {
-      id, organizationId: input.organizationId, userId: input.userId, role: input.role,
-      createdAt: now, updatedAt: now,
+      id,
+      organizationId: input.organizationId,
+      userId: input.userId,
+      role: input.role,
+      createdAt: now,
+      updatedAt: now,
     };
     this.memberships.set(id, m);
     return m;
@@ -173,7 +186,11 @@ class MemoryOrganizationRepository implements OrganizationRepository {
     const id = orgId(randomUUID());
     const now = new Date();
     const org: Organization = {
-      id, name: input.name, slug: input.slug, createdAt: now, updatedAt: now,
+      id,
+      name: input.name,
+      slug: input.slug,
+      createdAt: now,
+      updatedAt: now,
     };
     this.orgs.set(id, org);
     this.bySlug.set(input.slug, id);
@@ -267,7 +284,10 @@ class MemoryAuditRepository implements AuditRepository {
     this.events.push(ev);
     return ev;
   }
-  async listForOrganization(organizationId: OrganizationId, limit: number): Promise<readonly AuditEvent[]> {
+  async listForOrganization(
+    organizationId: OrganizationId,
+    limit: number,
+  ): Promise<readonly AuditEvent[]> {
     requireOrg(organizationId);
     return this.events
       .filter((e) => e.organizationId === organizationId)
@@ -281,7 +301,10 @@ class MemoryEventRepository implements EventRepository {
   async insert<T extends EventType, P>(event: EventEnvelope<T, P>): Promise<void> {
     this.events.push(event as unknown as EventEnvelope);
   }
-  async listForOrganization(organizationId: OrganizationId, limit: number): Promise<readonly EventEnvelope[]> {
+  async listForOrganization(
+    organizationId: OrganizationId,
+    limit: number,
+  ): Promise<readonly EventEnvelope[]> {
     requireOrg(organizationId);
     return this.events
       .filter((e) => e.organizationId === organizationId)
@@ -359,12 +382,18 @@ class MemoryEnvironmentRepository implements EnvironmentRepository {
     this.environments.set(id, env);
     return env;
   }
-  async findById(organizationId: OrganizationId, environmentId: EnvironmentId): Promise<Environment | null> {
+  async findById(
+    organizationId: OrganizationId,
+    environmentId: EnvironmentId,
+  ): Promise<Environment | null> {
     requireOrg(organizationId);
     const e = this.environments.get(environmentId);
     return e && e.organizationId === organizationId ? e : null;
   }
-  async listForProject(organizationId: OrganizationId, projectId: ProjectId): Promise<readonly Environment[]> {
+  async listForProject(
+    organizationId: OrganizationId,
+    projectId: ProjectId,
+  ): Promise<readonly Environment[]> {
     requireOrg(organizationId);
     return Array.from(this.environments.values()).filter(
       (e) => e.organizationId === organizationId && e.projectId === projectId,
@@ -378,41 +407,87 @@ class MemoryScanRepository implements ScanRepository {
   async insert(_input: never): Promise<never> {
     throw new Error('Phase 2 not implemented — see IMPLEMENTATION_STATUS.md');
   }
-  async findById(): Promise<never> { throw new Error('Phase 2 not implemented'); }
-  async listForProject(): Promise<never> { throw new Error('Phase 2 not implemented'); }
-  async updateStatus(): Promise<never> { throw new Error('Phase 2 not implemented'); }
+  async findById(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
+  async listForProject(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
+  async updateStatus(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
 }
 class MemoryPageRepository implements PageRepository {
-  async upsert(_input: never): Promise<never> { throw new Error('Phase 2 not implemented'); }
-  async findById(): Promise<never> { throw new Error('Phase 2 not implemented'); }
-  async listForProject(): Promise<never> { throw new Error('Phase 2 not implemented'); }
+  async upsert(_input: never): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
+  async findById(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
+  async listForProject(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
 }
 class MemoryPageSnapshotRepository implements PageSnapshotRepository {
-  async insert(_input: never): Promise<never> { throw new Error('Phase 2 not implemented'); }
-  async findByScan(): Promise<never> { throw new Error('Phase 2 not implemented'); }
+  async insert(_input: never): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
+  async findByScan(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
 }
 class MemoryRuleRepository implements RuleRepository {
-  async upsert(_input: never): Promise<never> { throw new Error('Phase 2 not implemented'); }
-  async findByCode(): Promise<never> { throw new Error('Phase 2 not implemented'); }
-  async listForOrganization(): Promise<never> { throw new Error('Phase 2 not implemented'); }
-  async listEnabled(): Promise<never> { throw new Error('Phase 2 not implemented'); }
+  async upsert(_input: never): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
+  async findByCode(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
+  async listForOrganization(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
+  async listEnabled(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
 }
 class MemoryIssueRepository implements IssueRepository {
-  async upsert(_input: never): Promise<never> { throw new Error('Phase 2 not implemented'); }
-  async findById(): Promise<never> { throw new Error('Phase 2 not implemented'); }
-  async listForScan(): Promise<never> { throw new Error('Phase 2 not implemented'); }
-  async listForProject(): Promise<never> { throw new Error('Phase 2 not implemented'); }
-  async updateStatus(): Promise<never> { throw new Error('Phase 2 not implemented'); }
-  async resolveManyByFingerprint(): Promise<never> { throw new Error('Phase 2 not implemented'); }
+  async upsert(_input: never): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
+  async findById(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
+  async listForScan(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
+  async listForProject(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
+  async updateStatus(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
+  async resolveManyByFingerprint(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
 }
 class MemoryJourneyRepository implements JourneyRepository {
-  async insert(_input: never): Promise<never> { throw new Error('Phase 2 not implemented'); }
-  async findById(): Promise<never> { throw new Error('Phase 2 not implemented'); }
-  async listForProject(): Promise<never> { throw new Error('Phase 2 not implemented'); }
+  async insert(_input: never): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
+  async findById(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
+  async listForProject(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
 }
 class MemoryJourneyStepRepository implements JourneyStepRepository {
-  async insert(_input: never): Promise<never> { throw new Error('Phase 2 not implemented'); }
-  async listForJourney(): Promise<never> { throw new Error('Phase 2 not implemented'); }
+  async insert(_input: never): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
+  async listForJourney(): Promise<never> {
+    throw new Error('Phase 2 not implemented');
+  }
 }
 
 // ───────────────────────── Aggregate ──────────────────────────────────────────
@@ -442,8 +517,12 @@ export function buildMemoryRepositories(): MemoryRepositories {
     issues: new MemoryIssueRepository() as unknown as IssueRepository,
     journeys: new MemoryJourneyRepository() as unknown as JourneyRepository,
     journeySteps: new MemoryJourneyStepRepository() as unknown as JourneyStepRepository,
-    get _memberships() { return memberships; },
-    get _organizations() { return orgs; },
+    get _memberships() {
+      return memberships;
+    },
+    get _organizations() {
+      return orgs;
+    },
     reset() {
       // simple behaviour — fresh buildMemoryRepositories() in each test
     },
@@ -451,5 +530,12 @@ export function buildMemoryRepositories(): MemoryRepositories {
 }
 
 // Unused-id-brands toucher to satisfy tree-shaking-aware linters
-void auditEventId; void eventId; void snapshotIdFn; void ruleIdFn; void issueIdFn;
-void journeyIdFn; void journeyStepIdFn; void sid; void pageIdFn;
+void auditEventId;
+void eventId;
+void snapshotIdFn;
+void ruleIdFn;
+void issueIdFn;
+void journeyIdFn;
+void journeyStepIdFn;
+void sid;
+void pageIdFn;
