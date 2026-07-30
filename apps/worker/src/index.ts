@@ -1,0 +1,1 @@
+export { buildLogger } from '@accessforge/logger';
