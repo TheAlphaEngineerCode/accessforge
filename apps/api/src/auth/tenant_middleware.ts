@@ -1,13 +1,13 @@
 /**
- * Tenant middleware — resolves the per-request `cloud` context from session cookie.
+ * Tenant middleware — resolves the per-request `auth` context from session cookie.
  *
  * Behaviour:
- *  - When no session cookie → unauthenticated (`cloud.tenant === null`).
+ *  - When no session cookie → unauthenticated (`auth.tenant === null`).
  *  - When session exists but tenant is unbound → member is logged in but with `tenant === null`.
  *    Endpoints that require a tenant return 403.
  *  - When session exists and is expired/revoked → treat as unauthenticated.
  *
- * The `cloud.tenant` field is the ONLY place handlers may read the tenant — never the
+ * The `auth.tenant` field is the ONLY place handlers may read the tenant — never the
  * cookie, never a query string, never the body. ADR-0009 enforcement.
  */
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -20,11 +20,11 @@ import { hashToken } from '@accessforge/auth';
 // Public fastify augmentation types. Declared once here and consumed everywhere.
 declare module 'fastify' {
   interface FastifyInstance {
-    readonly cloudDeps: AppDeps;
-    readonly cloudRepos: Repositories;
+    readonly appDeps: AppDeps;
+    readonly appRepos: Repositories;
   }
   interface FastifyRequest {
-    cloud: RequestContext;
+    auth: RequestContext;
   }
 }
 
@@ -38,7 +38,7 @@ export type TenantMiddleware = (request: FastifyRequest, reply: FastifyReply) =>
 
 export function buildTenantMiddleware(deps: AppDeps, repos: Repositories): TenantMiddleware {
   return async (request: FastifyRequest, _reply: FastifyReply) => {
-    request.cloud = UNAUTHENTICATED;
+    request.auth = UNAUTHENTICATED;
 
     const token = readSessionToken(request, deps);
     if (!token) return;
@@ -55,7 +55,7 @@ export function buildTenantMiddleware(deps: AppDeps, repos: Repositories): Tenan
         ? { organizationId: session.organizationId, role: session.role }
         : null;
 
-    request.cloud = {
+    request.auth = {
       sessionId: session.id,
       user,
       tenant,

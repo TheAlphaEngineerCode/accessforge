@@ -53,8 +53,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
   });
 
   // Decorates so handlers can reach deps/repos from the request instance if needed.
-  app.decorate('cloudDeps', deps);
-  app.decorate('cloudRepos', repos);
+  app.decorate('appDeps', deps);
+  app.decorate('appRepos', repos);
 
   // ─────────────────────── plugins ─────────────────────────────────────────────
   await app.register(cookie, {});
@@ -137,7 +137,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
   });
   app.get('/ready', async (_req, reply) => {
     try {
-      await repos.audit.listForOrganization('00000000-0000-0000-0000-000000000000' as never, 1);
+      await repos.ping();
       await reply.code(200).send({ status: 'ready' });
     } catch (err) {
       await reply.code(503).send({

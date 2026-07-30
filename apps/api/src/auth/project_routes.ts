@@ -67,7 +67,7 @@ export function projectRoutes(opts: ProjectRoutesDeps): (app: FastifyInstance) =
       '/projects',
       { preHandler: [requirePermission('project.read')] },
       async (request, reply) => {
-        const orgId = request.cloud.tenant!.organizationId;
+        const orgId = request.auth.tenant!.organizationId;
         const projects = await repos.projects.listForOrganization(orgId);
         return reply.code(200).send({ projects });
       },
@@ -79,7 +79,7 @@ export function projectRoutes(opts: ProjectRoutesDeps): (app: FastifyInstance) =
       async (request, reply) => {
         const body = createProjectBody(request.body);
         if (!body) throw new BadRequest('invalid payload');
-        const orgId = request.cloud.tenant!.organizationId;
+        const orgId = request.auth.tenant!.organizationId;
         const project = await repos.projects.insert({
           organizationId: orgId,
           name: body.name,
@@ -102,7 +102,7 @@ export function projectRoutes(opts: ProjectRoutesDeps): (app: FastifyInstance) =
       '/projects/:projectId',
       { preHandler: [requirePermission('project.read')] },
       async (request, reply) => {
-        const orgId = request.cloud.tenant!.organizationId;
+        const orgId = request.auth.tenant!.organizationId;
         const projectId = projectIdParam(request);
         const project = await repos.projects.findById(orgId, projectId);
         if (!project) throw new Forbidden('project not found');
@@ -114,7 +114,7 @@ export function projectRoutes(opts: ProjectRoutesDeps): (app: FastifyInstance) =
       '/projects/:projectId/environments',
       { preHandler: [requirePermission('project.read')] },
       async (request, reply) => {
-        const orgId = request.cloud.tenant!.organizationId;
+        const orgId = request.auth.tenant!.organizationId;
         const projectId = projectIdParam(request);
         const environments = await repos.environments.listForProject(orgId, projectId);
         return reply.code(200).send({ environments });
@@ -127,7 +127,7 @@ export function projectRoutes(opts: ProjectRoutesDeps): (app: FastifyInstance) =
       async (request, reply) => {
         const body = createEnvironmentBody(request.body);
         if (!body) throw new BadRequest('invalid payload');
-        const orgId = request.cloud.tenant!.organizationId;
+        const orgId = request.auth.tenant!.organizationId;
         const projectId = projectIdParam(request);
         const environment = await repos.environments.insert({
           organizationId: orgId,

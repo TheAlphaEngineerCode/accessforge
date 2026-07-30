@@ -7,6 +7,12 @@
  * environments — exactly the set of endpoints Phase 1 ships.
  */
 import type { TypedPool } from '@accessforge/database';
+
+/**
+ * The query surface shared by the pool and a transaction handle — repositories
+ * are written against it so the same classes serve both paths.
+ */
+type Queryable = Pick<TypedPool, 'query' | 'queryOne' | 'execute'>;
 import {
   asString,
   asOptionalString,
@@ -158,7 +164,7 @@ function parseEnvironment(row: Record<string, unknown>): Environment {
 }
 
 class PgUserRepository implements UserRepository {
-  constructor(private readonly pool: TypedPool) {}
+  constructor(private readonly pool: Queryable) {}
   async findByEmail(email: string): Promise<User | null> {
     return this.pool.queryOne(
       'SELECT * FROM users WHERE email = $1',
@@ -187,7 +193,7 @@ class PgUserRepository implements UserRepository {
 }
 
 class PgOrganizationRepository implements OrganizationRepository {
-  constructor(private readonly pool: TypedPool) {}
+  constructor(private readonly pool: Queryable) {}
   async findBySlug(slug: string): Promise<Organization | null> {
     return this.pool.queryOne('SELECT * FROM organizations WHERE slug = $1', [slug], parseOrg);
   }
@@ -217,7 +223,7 @@ class PgOrganizationRepository implements OrganizationRepository {
 }
 
 class PgMembershipRepository implements MembershipRepository {
-  constructor(private readonly pool: TypedPool) {}
+  constructor(private readonly pool: Queryable) {}
   async find(organizationId: OrganizationId, userId: UserId): Promise<Membership | null> {
     return this.pool.queryOne(
       `SELECT * FROM memberships WHERE organization_id = $1 AND user_id = $2`,
@@ -249,7 +255,7 @@ class PgMembershipRepository implements MembershipRepository {
 }
 
 class PgSessionRepository implements SessionRepository {
-  constructor(private readonly pool: TypedPool) {}
+  constructor(private readonly pool: Queryable) {}
   async insert(input: {
     userId: UserId;
     organizationId: OrganizationId | null;
@@ -297,7 +303,7 @@ class PgSessionRepository implements SessionRepository {
 }
 
 class PgAuditRepository implements AuditRepository {
-  constructor(private readonly pool: TypedPool) {}
+  constructor(private readonly pool: Queryable) {}
   async insert(input: {
     organizationId: OrganizationId | null;
     actorId: UserId | null;
@@ -342,7 +348,7 @@ class PgAuditRepository implements AuditRepository {
 }
 
 class PgEventRepository implements EventRepository {
-  constructor(private readonly pool: TypedPool) {}
+  constructor(private readonly pool: Queryable) {}
   async insert<T extends EventType, P>(event: EventEnvelope<T, P>): Promise<void> {
     await this.pool.execute(
       `INSERT INTO events
@@ -386,7 +392,7 @@ class PgEventRepository implements EventRepository {
 }
 
 class PgProjectRepository implements ProjectRepository {
-  constructor(private readonly pool: TypedPool) {}
+  constructor(private readonly pool: Queryable) {}
   async insert(input: {
     organizationId: OrganizationId;
     name: string;
@@ -435,7 +441,7 @@ class PgProjectRepository implements ProjectRepository {
 }
 
 class PgEnvironmentRepository implements EnvironmentRepository {
-  constructor(private readonly pool: TypedPool) {}
+  constructor(private readonly pool: Queryable) {}
   async insert(input: {
     organizationId: OrganizationId;
     projectId: ProjectId;
@@ -474,26 +480,65 @@ class PgEnvironmentRepository implements EnvironmentRepository {
   }
 }
 
+// Phase 2: scans, pages, pageSnapshots, rules, issues, journeys, journeySteps
+// are wired when the browser engine lands. The interfaces exist; the pg
+// implementations are intentionally not shipped yet to keep Phase 1 scope
+// honest (see IMPLEMENTATION_STATUS.md).
+type Phase1Repositories = Omit<
+  Repositories,
+  | 'scans'
+  | 'pages'
+  | 'pageSnapshots'
+  | 'rules'
+  | 'issues'
+  | 'journeys'
+  | 'journeySteps'
+  | 'withTransaction'
+  | 'ping'
+>;
+
+function buildRepoSet(q: Queryable): Phase1Repositories {
+  return {
+    users: new PgUserRepository(q),
+    organizations: new PgOrganizationRepository(q),
+    memberships: new PgMembershipRepository(q),
+    sessions: new PgSessionRepository(q),
+    audit: new PgAuditRepository(q),
+    events: new PgEventRepository(q),
+    projects: new PgProjectRepository(q),
+    environments: new PgEnvironmentRepository(q),
+  };
+}
+
+const PHASE2_STUBS = {
+  scans: undefined as never,
+  pages: undefined as never,
+  pageSnapshots: undefined as never,
+  rules: undefined as never,
+  issues: undefined as never,
+  journeys: undefined as never,
+  journeySteps: undefined as never,
+};
+
 export function buildPgRepositories(pool: TypedPool): Repositories {
   return {
-    users: new PgUserRepository(pool),
-    organizations: new PgOrganizationRepository(pool),
-    memberships: new PgMembershipRepository(pool),
-    sessions: new PgSessionRepository(pool),
-    audit: new PgAuditRepository(pool),
-    events: new PgEventRepository(pool),
-    projects: new PgProjectRepository(pool),
-    environments: new PgEnvironmentRepository(pool),
-    // Phase 2: scans, pages, pageSnapshots, rules, issues, journeys, journeySteps
-    // are wired when the browser engine lands. The interfaces exist; the pg
-    // implementations are intentionally not shipped yet to keep Phase 1 scope
-    // honest (see IMPLEMENTATION_STATUS.md).
-    scans: undefined as never,
-    pages: undefined as never,
-    pageSnapshots: undefined as never,
-    rules: undefined as never,
-    issues: undefined as never,
-    journeys: undefined as never,
-    journeySteps: undefined as never,
+    ...buildRepoSet(pool),
+    ...PHASE2_STUBS,
+    withTransaction: (fn) =>
+      pool.transaction((tx) => {
+        const txRepos: Repositories = {
+          ...buildRepoSet(tx),
+          ...PHASE2_STUBS,
+          // Nested calls join the already-open transaction instead of BEGINning twice.
+          withTransaction: (inner) => inner(txRepos),
+          ping: async () => {
+            await tx.execute('SELECT 1', []);
+          },
+        };
+        return fn(txRepos);
+      }),
+    ping: async () => {
+      await pool.execute('SELECT 1', []);
+    },
   };
 }

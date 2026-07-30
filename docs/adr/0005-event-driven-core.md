@@ -8,30 +8,39 @@ date: 2026-07-27
 # ADR-0005 — Event-driven core with an internal bus
 
 ## Context
-A control plane's value depends on reacting to state changes: a resource was discovered, a
-deployment failed, a cost crossed a threshold, a policy was violated. Hardcoding these flows
-as method calls couples producers to consumers and makes "audit everything" harder.
+
+The platform's value depends on reacting to state changes: a scan finished, an issue was
+detected, a journey step failed, a regression appeared, a quality gate blocked a release.
+Hardcoding these flows as method calls couples producers to consumers and makes "audit
+everything" harder.
 
 ## Decision
-All domain mutations emit an **`EventEnvelope`** (spec §42) on an internal in-process bus
-backed by Postgres + (optional) Redis streams for cross-process delivery to workers.
 
-- Every `write` path: mutate state in tx → insert event row in same tx → emit after commit.
-- Workers subscribe by event type and never coordinate via cron polls where avoidable.
+All domain mutations emit an **`EventEnvelope`** on an internal in-process bus, backed by
+Postgres persistence (and Redis streams later for cross-process delivery to the worker).
+
+- Every write path: mutate state in tx → insert event row in same tx → emit after commit.
+- Workers subscribe by event type (`scan.completed`, `issue.detected`,
+  `journey.step.failed`, `regression.detected`, …) and never coordinate via cron polls
+  where avoidable.
 - The envelope has `id`, `type`, `version`, `organizationId`, `source`, `entityId`,
   `correlationId`, `causationId`, `occurredAt`, `payload`.
-- Events are **append-only** (see ADR-0003 audit partition); they are also the audit source of
-  truth — `AuditEvent` (spec §39) is a *projection* of system events + actor-attributed actions.
+- Events are **append-only**; the audit trail (`AuditEvent`) is actor-attributed and
+  separate, but shares the correlation id so "what caused what" is reconstructable.
 
 ## Consequences
-- ✅ Cross-cutting features (audit, alert, recommendation, indexing) subscribe to the same bus.
-- ✅ `correlationId` makes "what caused what" reconstructable across services.
+
+- ✅ Cross-cutting features (notifications, reports, CI status, SSE progress) subscribe to
+  the same bus.
+- ✅ `correlationId` makes a scan's whole lifecycle traceable end-to-end.
 - ⚠️ Strictly at-least-once: subscribers must be idempotent, keyed on `event.id`.
 - ⚠️ Tests must exercise the bus end-to-end to prove subscribers do not silently drop.
 
 ## Alternatives considered
+
 - **Kafka/NATS**: ops overhead for self-hosters; deferred until throughput demands it.
 - **Direct method calls**: rejected — couples modules and breaks "audit everything".
 
 ## References
-- Spec §42 Event system, §21 Cost engine, §39 Audit, §29 Incidents
+
+- ADR-0003 (persistence), ADR-0006 (SSE fan-out)

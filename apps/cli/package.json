@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "bin": {
-    "cloud": "./dist/main.js"
+    "accessforge": "./dist/main.js"
   },
   "scripts": {
     "dev": "tsx src/main.ts",

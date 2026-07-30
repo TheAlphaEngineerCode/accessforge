@@ -1,92 +1,88 @@
-# Cloud — Master Development Prompt (canonical summary)
+# AccessForge — Master Development Prompt (canonical summary)
 
-This file is the canonical summary of the *Cloud Master Development Prompt* that
-seeded the project. The full original is in the project history; this summary
-captures every architectural decision and serves as the source a fresh agent can
-re-read after a `Continue development` instruction.
+This file is the canonical summary of the *AccessForge Master Development Prompt* that
+seeded the project. The full original lives in the project history; this summary captures
+every architectural decision and serves as the source a fresh agent can re-read after a
+`Continue development` instruction.
 
-> For the per-decision rationale, read `docs/adr/`. For the live roadmap with
-> per-phase completion status, read `IMPLEMENTATION_STATUS.md` and `ROADMAP.md`.
+> For the per-decision rationale, read `docs/adr/`. For the live roadmap with per-phase
+> completion status, read `IMPLEMENTATION_STATUS.md` and `ROADMAP.md`.
 
 ## Vision
 
-The platform centralizes management, automation and observability of cloud,
-containers, Kubernetes and on-prem infrastructure in one operational layer.
-Its central question:
+AccessForge is an open source platform for **analyzing, testing, monitoring and preventing
+digital accessibility problems in web applications**. Its differentiator is **Accessibility
+Journey Testing**: validating that real people can complete real flows — create an account,
+recover a password, finish a checkout — using different interaction modes (keyboard, screen
+reader semantics, focus navigation). Its central question:
 
-> *What is running, where, how much does it cost, what depends on it, what state
-> is it in, what risks does it carry, and what happens if something changes or
-> fails?*
+> *Can a user with a disability actually complete this task, and can we prove — with
+> evidence — when a release breaks that ability?*
 
 ## Non-goals (declared, not just absent)
 
-- Not another static dashboard.
-- Not a fake-data product without signage.
-- Not vendor lock-in. No provider SDK in `packages/`.
+- Not just another DOM scanner. Journeys are the unit of value, not violations.
+- Not AI-first. AI only as an assistant (explain, suggest); never the source of a
+  compliance claim.
+- Not a WCAG-compliance rubber stamp. No compliance is asserted without recorded evidence.
+- Not a replacement for human audit — a force multiplier for it.
+- Not browser execution on the host. Scans run in sandboxed, isolated workers.
 - Not premature microservices. Modular monolith until evidence forces otherwise.
-- Not cloud IaC execution on the host. Always sandboxed.
-- Not destructive ops without human approval.
-- Not "raise-on-warning" replacing honest documentation.
 
 ## Principles
 
-Cloud agnostic · Open source · API first · IaC first · Security by default ·
-GitOps friendly · Event driven · Audit everything · Vendor neutral · Multi-tenant
-· Modular · Self-hostable · Observable by default · Zero hardcoded infrastructure
-· Least privilege · Automation with human control · Idempotency · Reproducibility
-· Declarative infrastructure · Progressive complexity.
+Open source · API first · Journeys over snapshots · Evidence over claims · Security by
+default · Multi-tenant · Event driven · Audit everything · Self-hostable · Observable by
+default · Least privilege · Idempotency · Reproducibility · Progressive complexity.
 
 ## Architecture summary
 
-- **Modular monolith + worker** (ADR-0001). One deploy, one log, one trace;
-  background work in workers consuming Postgres / Redis streams.
+- **Modular monolith + worker** (ADR-0001). One deploy, one log, one trace; background
+  scan/journey execution in workers consuming Postgres / Redis streams.
 - **TypeScript first** (ADR-0002) — strict mode across web, api, worker, cli.
-- **PostgreSQL 17** as system of record (ADR-0003), including the topology graph
-  (BFS over per-tenant rows), audit log (append-only, partitioned), events
-  (single table with migration options to Kafka/NATS later).
-- **Provider abstraction** (ADR-0004) — `CloudProvider` interface, vendor SDK
-  confined to `connectors/`.
-- **In-process event bus** (ADR-0005) with append-only persistence; subscribers
-  idempotent on `event.id`.
-- **SSE before WebSockets** (ADR-0006) — `Last-Event-ID` cursor, heartbeat,
-  per-org fan-out.
-- **OpenTofu in a sandboxed container** (ADR-0007) — no host exec, no default
-  network egress, plan + approval flow.
-- **Cloud Simulator as a first-class provider** (ADR-0008) — every feature is
-  demoable without cloud creds.
-- **Multi-tenant by row scoping** (ADR-0009), Postgres RLS deferred until it's a
-  real upgrade, not a placebo.
-- **Human-approved destructive operations** (ADR-0010) — fail-closed by default
-  for unknown actions.
+- **PostgreSQL 17** as system of record (ADR-0003): projects, scans, pages, issues,
+  journeys, baselines, regressions, audit log (append-only), events.
+- **Engine abstraction** (ADR-0004) — rule engines (axe-core, keyboard engine, contrast,
+  ARIA analysis) behind one interface; engine SDKs never leak into `packages/domain`.
+- **In-process event bus** (ADR-0005) with append-only persistence; subscribers idempotent
+  on `event.id`.
+- **SSE before WebSockets** (ADR-0006) — scan progress streaming with `Last-Event-ID`
+  cursor, heartbeat, per-org fan-out.
+- **Sandboxed browser execution** (ADR-0007) — Playwright in isolated workers; no host
+  exec, no default network egress beyond the target.
+- **Demo targets as first-class fixtures** (ADR-0008) — every feature is demoable against
+  the bundled example apps without external credentials.
+- **Multi-tenant by row scoping** (ADR-0009); Postgres RLS deferred until it's a real
+  upgrade, not a placebo.
+- **AI as assistant only** (ADR-0010) — suggestions and explanations, never autonomous
+  compliance claims; fail-closed on anything the engine did not measure.
 
-## Resource model (Phase 2+)
+## Domain model
 
-- `CloudResource` — the central entity; ~25 declared types (VMs, containers, K8s
-  artifacts, databases, caches, queues, load balancers, object storage,
-  volumes, networks, subnets, firewalls, DNS, serverless, API gateways,
-  secrets, certificates, applications, services, environments, "other").
-- `ResourceNode` / `ResourceEdge` — the topology graph. ~15 relation kinds
-  (`DEPENDS_ON`, `RUNS_ON`, `HOSTS`, `USES`, `READS_FROM`, etc).
-- `BlastRadiusResult` — the visited subgraph of `DEPENDS_ON`/`HOSTS`/`USES`
-  relations from a single root.
+- Identity: `Organization`, `User`, `Membership`, `Session` — see `packages/domain`.
+- Tree: `Organization → Project → Environment → Scan → Page/PageSnapshot → Issue`.
+- Journeys: `Journey → JourneyStep` (NAVIGATE, CLICK, TYPE, PRESS_KEY, SELECT, CHECK,
+  UPLOAD, WAIT, ASSERT), executed per interaction mode.
+- Rules: `Rule` with category (SEMANTICS, KEYBOARD, FOCUS, FORMS, ARIA, COLOR, NAVIGATION,
+  IMAGES, HEADINGS, LANDMARKS, TABLES, DYNAMIC_CONTENT, MEDIA, RESPONSIVE), severity and
+  WCAG references.
+- Regression: `Baseline → Regression` over stable issue `fingerprint`s
+  (NEW / UNCHANGED / RESOLVED / REGRESSED).
+- Governance: `Policy` (quality gates), `AuditEvent`, `EventEnvelope`.
 
 ## Identity (Phase 1)
 
-- `Organization`, `User`, `Membership`, `Session` — see `packages/domain`.
-- RBAC roles: `OWNER`, `ADMIN`, `PLATFORM_ENGINEER`, `DEVOPS`, `SRE`,
-  `SECURITY`, `FINOPS`, `DEVELOPER`, `VIEWER` (matrix in `packages/permissions`).
-- Permission strings are an enum, not free strings — adding requires a code
-  change.
+- RBAC roles: `OWNER`, `ADMIN`, `ACCESSIBILITY_ENGINEER`, `DEVELOPER`, `QA`, `VIEWER`
+  (matrix in `packages/permissions`).
+- Permission strings are an enum, not free strings — adding one requires a code change.
 - Audit row for every mutation, including 4xx/5xx.
 
-## Demos (spec §55–59)
+## Demo projects (seeded)
 
-- **Black Friday Incident** (traffic spike → cascade).
-- **Dangerous Deployment** (failed deploy → human rollback).
-- **Cost Explosion** (autoscale intended → runaway cost).
-- **Security Exposure** (storage bucket made public → policy violation).
-
-Ships with the simulator connector (Phase 2).
+- **Accessible Store** — intentional best practices; regression-detection baseline.
+- **Broken Commerce** — intentional violations: unlabeled forms, broken focus order,
+  inaccessible modals; journey and rule testing target.
+- **SaaS Dashboard** — tables, dynamic content, live regions.
 
 ## Phases
 

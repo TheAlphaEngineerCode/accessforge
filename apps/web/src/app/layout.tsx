@@ -7,9 +7,9 @@ import type { ReactNode } from 'react';
  * static title; Phase 2+ adds the command palette and global navigation.
  */
 export const metadata = {
-  title: 'AccessForge — Cloud Infrastructure Control Plane',
+  title: 'AccessForge — Accessibility Journey Testing',
   description:
-    'AccessForge — open source control plane for managing, automating and observing cloud, containers, Kubernetes and on-prem infrastructure in a single operational layer.',
+    'AccessForge — open source platform for analyzing, testing, monitoring and preventing accessibility problems in web applications via Accessibility Journey Testing.',
 };
 
 const fontStack =

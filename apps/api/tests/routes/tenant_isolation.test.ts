@@ -13,15 +13,15 @@ afterEach(async () => {
 describe('tenant isolation', () => {
   async function setupTwoTenants() {
     const tenantA = await register(sut.app, {
-      email: 'a@cloud.test',
-      password: 'S3cur3-Cloud-Aaa-XX',
+      email: 'a@accessforge.test',
+      password: 'S3cur3-Forge-Aaa-XX',
       displayName: 'A',
       orgName: 'Org A',
       orgSlug: 'org-a',
     });
     const tenantB = await register(sut.app, {
-      email: 'b@cloud.test',
-      password: 'S3cur3-Cloud-Bbb-XX',
+      email: 'b@accessforge.test',
+      password: 'S3cur3-Forge-Bbb-XX',
       displayName: 'B',
       orgName: 'Org B',
       orgSlug: 'org-b',
@@ -66,7 +66,7 @@ describe('tenant isolation', () => {
 
   it('cross-tenant resource ids supplied in the URL or body never reach another tenant', async () => {
     const { tenantA } = await setupTwoTenants();
-    // The /audit route reads orgId from `request.cloud.tenant` — it ignores any query/body
+    // The /audit route reads orgId from `request.auth.tenant` — it ignores any query/body
     // `organizationId` parameter. Writing one to the query string cannot exfiltrate.
     const trickRes = await sut.app.inject({
       method: 'GET',

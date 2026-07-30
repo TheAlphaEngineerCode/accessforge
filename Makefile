@@ -1,8 +1,8 @@
-.PHONY: help setup dev test test-e2e lint typecheck build docker-up docker-down db-migrate db-seed db-reset simulator security clean
+.PHONY: help setup dev test test-e2e lint typecheck build docker-up docker-down db-migrate db-seed db-reset security clean
 
 # Default target
 help:
-	@echo "The Alpha Cloud — available make targets:"
+	@echo "AccessForge — available make targets:"
 	@echo "  setup          Install dependencies"
 	@echo "  dev            Run all apps in dev mode (web + api + worker)"
 	@echo "  test           Run unit + integration tests"
@@ -13,9 +13,8 @@ help:
 	@echo "  docker-up      Start Postgres, Redis and MinIO via docker compose"
 	@echo "  docker-down    Stop docker compose stack"
 	@echo "  db-migrate     Apply pending database migrations"
-	@echo "  db-seed        Seed demo data (Alpha Cloud Labs + Black Friday scenario)"
+	@echo "  db-seed        Seed demo data (AccessForge Labs + demo projects)"
 	@echo "  db-reset       Drop and recreate the database (DESTRUCTIVE)"
-	@echo "  simulator      Run the Cloud Simulator in foreground"
 	@echo "  security       Run Trivy + Semgrep + Gitleaks locally"
 	@echo "  clean          Remove build artifacts and caches"
 
@@ -29,7 +28,7 @@ test:
 	pnpm test
 
 test-e2e:
-	pnpm --filter @cloud/web test:e2e
+	pnpm --filter @accessforge/web test:e2e
 
 lint:
 	pnpm lint
@@ -47,18 +46,15 @@ docker-down:
 	docker compose down
 
 db-migrate:
-	pnpm --filter @cloud/api db:migrate
+	pnpm --filter @accessforge/api db:migrate
 
 db-seed:
-	pnpm --filter @cloud/api db:seed
+	pnpm --filter @accessforge/api db:seed
 
 db-reset:
 	@echo "This will drop the database. Press Ctrl+C to abort."
 	@sleep 3
-	pnpm --filter @cloud/api db:reset
-
-simulator:
-	pnpm --filter @cloud/api simulator
+	pnpm --filter @accessforge/api db:reset
 
 security:
 	@command -v trivy >/dev/null 2>&1 && trivy fs . --severity HIGH,CRITICAL || echo "[skip] trivy not installed"

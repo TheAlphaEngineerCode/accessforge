@@ -11,11 +11,11 @@ afterEach(async () => {
 });
 
 const demoCredentials = {
-  email: 'operator@cloud.test',
-  password: 'S3cur3-Cloud-Password-IX',
+  email: 'operator@accessforge.test',
+  password: 'S3cur3-Forge-Password-IX',
   displayName: 'Demo Operator',
-  orgName: 'Alpha Cloud Labs',
-  orgSlug: 'alpha-cloud-labs',
+  orgName: 'AccessForge Labs',
+  orgSlug: 'accessforge-labs',
 };
 
 describe('auth — register', () => {
@@ -65,7 +65,7 @@ describe('auth — register', () => {
       url: '/auth/register',
       payload: {
         ...demoCredentials,
-        email: 'other@cloud.test',
+        email: 'other@accessforge.test',
         orgSlug: demoCredentials.orgSlug,
       },
     });
@@ -78,7 +78,7 @@ describe('auth — login', () => {
     const res = await sut.app.inject({
       method: 'POST',
       url: '/auth/login',
-      payload: { email: 'ghost@cloud.test', password: 'anything-here' },
+      payload: { email: 'ghost@accessforge.test', password: 'anything-here' },
     });
     expect(res.statusCode).toBe(401);
   });
@@ -93,7 +93,7 @@ describe('auth — login', () => {
     const unknown = await sut.app.inject({
       method: 'POST',
       url: '/auth/login',
-      payload: { email: 'ghost@cloud.test', password: 'wrong-password-XX' },
+      payload: { email: 'ghost@accessforge.test', password: 'wrong-password-XX' },
     });
     expect(known.statusCode).toBe(401);
     expect(unknown.statusCode).toBe(401);

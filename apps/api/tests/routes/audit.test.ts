@@ -13,8 +13,8 @@ afterEach(async () => {
 describe('audit recording', () => {
   it('login writes an audit row', async () => {
     await register(sut.app, {
-      email: 'audit@cloud.test',
-      password: 'S3cur3-Cloud-Aud-XX',
+      email: 'audit@accessforge.test',
+      password: 'S3cur3-Forge-Aud-XX',
       displayName: 'Aud',
       orgName: 'Org Aud',
       orgSlug: 'org-aud',
@@ -32,8 +32,8 @@ describe('audit recording', () => {
 
   it('GET /auth/me is NOT audited (read implies no noise)', async () => {
     const { cookie } = await register(sut.app, {
-      email: 'noaudit@cloud.test',
-      password: 'S3cur3-Cloud-Na-XX',
+      email: 'noaudit@accessforge.test',
+      password: 'S3cur3-Forge-Na-XX',
       displayName: 'Noa',
       orgName: 'Org Na',
       orgSlug: 'org-na',

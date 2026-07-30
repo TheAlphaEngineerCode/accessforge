@@ -25,8 +25,8 @@ export function organizationRoutes(opts: OrgRoutesDeps): (app: FastifyInstance) 
   const { repos } = opts;
   return (app) => {
     app.get('/organizations', async (request, reply) => {
-      if (!request.cloud.user) throw new Unauthorized();
-      const orgs = await repos.organizations.listForUser(request.cloud.user.id);
+      if (!request.auth.user) throw new Unauthorized();
+      const orgs = await repos.organizations.listForUser(request.auth.user.id);
       return reply.code(200).send({
         organizations: orgs.map((o) => ({
           id: o.id,
@@ -38,17 +38,21 @@ export function organizationRoutes(opts: OrgRoutesDeps): (app: FastifyInstance) 
     });
 
     app.post('/organizations', async (request, reply) => {
-      if (!request.cloud.user) throw new Unauthorized();
+      if (!request.auth.user) throw new Unauthorized();
       const body = createBody(request.body);
       if (!body) throw new BadRequest('invalid payload');
       const existing = await repos.organizations.findBySlug(body.slug);
       if (existing) throw new Forbidden('org slug taken');
 
-      const org = await repos.organizations.insert({ name: body.name, slug: body.slug });
-      await repos.memberships.insert({
-        organizationId: org.id,
-        userId: request.cloud.user.id,
-        role: 'OWNER',
+      const userId = request.auth.user.id;
+      const org = await repos.withTransaction(async (tx) => {
+        const created = await tx.organizations.insert({ name: body.name, slug: body.slug });
+        await tx.memberships.insert({
+          organizationId: created.id,
+          userId,
+          role: 'OWNER',
+        });
+        return created;
       });
 
       request.auditPatch = {

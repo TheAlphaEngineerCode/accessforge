@@ -501,7 +501,10 @@ export interface MemoryRepositories extends Repositories {
 export function buildMemoryRepositories(): MemoryRepositories {
   const memberships = new MemoryMembershipRepository();
   const orgs = new MemoryOrganizationRepository(memberships);
-  return {
+  const repos: MemoryRepositories = {
+    // No rollback in memory — the point is that handlers code against one contract.
+    withTransaction: (fn) => fn(repos),
+    ping: async () => {},
     users: new MemoryUserRepository(),
     organizations: orgs,
     memberships,
@@ -527,6 +530,7 @@ export function buildMemoryRepositories(): MemoryRepositories {
       // simple behaviour — fresh buildMemoryRepositories() in each test
     },
   };
+  return repos;
 }
 
 // Unused-id-brands toucher to satisfy tree-shaking-aware linters

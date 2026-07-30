@@ -50,8 +50,8 @@ async function issueSessionFor(
 describe('RBAC enforcement', () => {
   it('viewer cannot read audit (no permission)', async () => {
     const { user } = await register(sut.app, {
-      email: 'owner@cloud.test',
-      password: 'S3cur3-Cloud-Owner-XX',
+      email: 'owner@accessforge.test',
+      password: 'S3cur3-Forge-Owner-XX',
       displayName: 'Owner',
       orgName: 'Org A',
       orgSlug: 'org-a',
@@ -69,8 +69,8 @@ describe('RBAC enforcement', () => {
 
   it('admin can read audit', async () => {
     const { user } = await register(sut.app, {
-      email: 'admin@cloud.test',
-      password: 'S3cur3-Cloud-Admin-XX',
+      email: 'admin@accessforge.test',
+      password: 'S3cur3-Forge-Admin-XX',
       displayName: 'Admin',
       orgName: 'Org C',
       orgSlug: 'org-c',

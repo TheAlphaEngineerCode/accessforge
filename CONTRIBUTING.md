@@ -9,11 +9,11 @@ Thanks for being here. The short version:
   ADR-0001.
 - **Tenant boundary sacred.** Any new table that holds tenant data MUST have
   `organization_id NOT NULL` + index; repository queries MUST receive the
-  tenant from `request.cloud.tenant`, never from query/body. See ADR-0009.
+  tenant from the request context, never from query/body. See ADR-0009.
 - **Audit every mutation.** Any new mutating endpoint MUST set `request.auditPatch`
   with action + resourceType/resourceId. Audit tests pass/fail-future.
-- **Destructive actions fail closed.** A new `DESTRUCTIVE` action requires an
-  approval row. See ADR-0010.
+- **Findings come from engines, never from models.** No code path may turn an AI
+  response into an issue, a resolution or a compliance figure. See ADR-0010.
 - **No AI attribution.** Don't end commits with `Co-Authored-By: Claude` or
   anything similar. The repository is a portfolio public artifact; commits stay
   clean.

@@ -51,6 +51,14 @@ const registerBody = (body: unknown) => {
   };
 };
 
+/** Map a Postgres unique-constraint race (code 23505) to a 409 instead of a 500. */
+function rethrowUniqueViolationAsConflict(err: unknown): never {
+  if (typeof err === 'object' && err !== null && (err as { code?: unknown }).code === '23505') {
+    throw new Conflict('email or organization slug already taken');
+  }
+  throw err;
+}
+
 const loginBody = (body: unknown) => {
   if (typeof body !== 'object' || body === null) return null;
   const b = body as Record<string, unknown>;
@@ -89,29 +97,36 @@ export function authRoutes(opts: AuthRoutesDeps): (app: FastifyInstance) => void
       if (existingOrg) throw new Conflict('organization slug already taken');
 
       const passwordHash = await hashPassword(body.password);
-      const correlationId = request._cloudCorrelation ?? randomId('corr');
+      const correlationId = request._correlationId ?? randomId('corr');
 
-      const user = await repos.users.insert({
-        email: body.email,
-        passwordHash,
-        displayName: body.displayName,
-      });
-      const org = await repos.organizations.insert({ name: body.orgName, slug: body.orgSlug });
-      const membership = await repos.memberships.insert({
-        organizationId: org.id,
-        userId: user.id,
-        role: 'OWNER',
-      });
-
-      const { token, session } = await issueSession({
-        repo: repos.sessions,
-        userId: user.id,
-        organizationId: org.id,
-        role: membership.role,
-        ttlSeconds: deps.sessionTtlSeconds,
-        ip: request._cloudIp ?? null,
-        userAgent: request.headers['user-agent'] ?? null,
-      });
+      // User + org + membership + session commit or roll back together; a crash
+      // mid-flight must not leave an orphan user. The pre-checks above give the
+      // friendly 409; the unique-violation mapping covers the race between them.
+      const { user, org, membership, token, session } = await repos
+        .withTransaction(async (tx) => {
+          const user = await tx.users.insert({
+            email: body.email,
+            passwordHash,
+            displayName: body.displayName,
+          });
+          const org = await tx.organizations.insert({ name: body.orgName, slug: body.orgSlug });
+          const membership = await tx.memberships.insert({
+            organizationId: org.id,
+            userId: user.id,
+            role: 'OWNER',
+          });
+          const { token, session } = await issueSession({
+            repo: tx.sessions,
+            userId: user.id,
+            organizationId: org.id,
+            role: membership.role,
+            ttlSeconds: deps.sessionTtlSeconds,
+            ip: request._clientIp ?? null,
+            userAgent: request.headers['user-agent'] ?? null,
+          });
+          return { user, org, membership, token, session };
+        })
+        .catch(rethrowUniqueViolationAsConflict);
       setSessionCookie(reply, deps, token);
 
       request.auditPatch = {
@@ -162,7 +177,7 @@ export function authRoutes(opts: AuthRoutesDeps): (app: FastifyInstance) => void
         organizationId: firstMembership?.organizationId ?? null,
         role: firstMembership?.role ?? null,
         ttlSeconds: deps.sessionTtlSeconds,
-        ip: request._cloudIp ?? null,
+        ip: request._clientIp ?? null,
         userAgent: request.headers['user-agent'] ?? null,
       });
       setSessionCookie(reply, deps, token);
@@ -184,7 +199,7 @@ export function authRoutes(opts: AuthRoutesDeps): (app: FastifyInstance) => void
             organizationId: organizationId(firstMembership.organizationId),
             source: 'auth',
             entityId: user.id,
-            correlationId: request._cloudCorrelation ?? randomId('corr'),
+            correlationId: request._correlationId ?? randomId('corr'),
             causationId: null,
             occurredAt: new Date(),
             payload: { userId: user.id, sessionId: session.id },
@@ -201,28 +216,28 @@ export function authRoutes(opts: AuthRoutesDeps): (app: FastifyInstance) => void
     });
 
     app.post('/auth/logout', async (request, reply) => {
-      if (!request.cloud.user || !request.cloud.sessionId) {
+      if (!request.auth.user || !request.auth.sessionId) {
         return reply.code(204).send();
       }
-      await repos.sessions.revoke(request.cloud.sessionId);
+      await repos.sessions.revoke(request.auth.sessionId);
       clearSessionCookie(reply, deps);
       request.auditPatch = {
         action: 'user.logout',
         resourceType: 'session',
-        resourceId: request.cloud.sessionId,
+        resourceId: request.auth.sessionId,
       };
       return reply.code(204).send();
     });
 
     app.get('/auth/me', async (request, reply) => {
-      if (!request.cloud.user) throw new Unauthorized();
-      const memberships = await repos.memberships.listForUser(request.cloud.user.id);
-      const orgs = await repos.organizations.listForUser(request.cloud.user.id);
+      if (!request.auth.user) throw new Unauthorized();
+      const memberships = await repos.memberships.listForUser(request.auth.user.id);
+      const orgs = await repos.organizations.listForUser(request.auth.user.id);
       return reply.code(200).send({
         user: {
-          id: request.cloud.user.id,
-          email: request.cloud.user.email,
-          displayName: request.cloud.user.displayName,
+          id: request.auth.user.id,
+          email: request.auth.user.email,
+          displayName: request.auth.user.displayName,
         },
         memberships: memberships.map((m) => ({
           organizationId: m.organizationId,
@@ -234,7 +249,7 @@ export function authRoutes(opts: AuthRoutesDeps): (app: FastifyInstance) => void
           slug: o.slug,
           role: o.role,
         })),
-        tenant: request.cloud.tenant,
+        tenant: request.auth.tenant,
       });
     });
   };

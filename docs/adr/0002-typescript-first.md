@@ -8,40 +8,42 @@ date: 2026-07-27
 # ADR-0002 — TypeScript-first across the stack
 
 ## Context
-AccessForge touches frontend (topology graphs, dashboards, ACE editors), backend (auth, RBAC,
-inventory, event bus), CLI, connectors and infrastructure glue. Polyglot stacks pay a tax in
-serialization contracts, duplicated domain types and slower iteration.
+
+AccessForge touches frontend (console, scan views, journey editors), backend (auth, RBAC,
+scan orchestration, event bus), worker (Playwright drivers, rule engines), CLI and
+infrastructure glue. Polyglot stacks pay a tax in serialization contracts, duplicated
+domain types and slower iteration — and the accessibility tooling ecosystem the project
+depends on (Playwright, axe-core) is TypeScript-native.
 
 ## Decision
-**TypeScript everywhere**, including the API, web, worker, CLI and all packages. Strict mode
-with `noImplicitAny`, `strictNullChecks`, `noUncheckedIndexedAccess` and `noImplicitReturns`.
-The only exception is **OpenTofu/Terraform HCL**, which is its own language and runs in a
-sandbox (ADR-0007).
 
-Go is **not** introduced at this stage. If a component later demonstrates a need for sustained
-high concurrency or sub-millisecond hot paths (audit log ingestion, metrics fan-out), the
-extraction will happen *with* a typed contract (Protobuf / OpenAPI), not as a casual crossover.
+**TypeScript everywhere**, including the API, web, worker, CLI and all packages. Strict
+mode with `noImplicitAny`, `strictNullChecks`, `noUncheckedIndexedAccess` and
+`noImplicitReturns`.
 
 ## Version pins
-- **TypeScript 5.9.3** (not 7.x). At decision time, `typescript-eslint@8.x` declares
-  `typescript <6.1.0` as its peer; TS 7 would disable linting with type information, which is
-  exactly what catches type leaks in the domain layer. Migration trigger: when
-  `typescript-eslint` declares TS 7.x support and we have run lint green on a branch.
-- **Node.js ">=22.13.0"**. Lowest matrix version MUST be exercised by CI; an advertised floor
-  the package manager cannot support is a documentation lie (cf. lesson in [[Alpha Graph Code]]
-  diary).
+
+- **TypeScript 5.9.3**. At decision time, `typescript-eslint@8.x` declares
+  `typescript <6.1.0` as its peer; a newer major would disable linting with type
+  information, which is exactly what catches type leaks in the domain layer. Migration
+  trigger: when `typescript-eslint` declares support and lint runs green on a branch.
+- **Node.js ">=22.13.0"**. The lowest advertised version MUST actually be exercised by CI;
+  an advertised floor CI never runs is a documentation lie.
 
 ## Consequences
+
 - ✅ One language, one type system, one linter config.
-- ✅ Types travel from DB row to API response to frontend query via generated OpenAPI + TanStack.
-- ⚠️ Some heavy vendor SDKs ship better Go bindings than TS — surfaced again at ADR-0004.
-- ⚠️ Pin discipline: any new dep that requires a TS major bump triggers a check of the lint peer.
+- ✅ Types travel from DB row to API response to frontend without a serialization contract.
+- ✅ Playwright and axe-core integrate natively — no bindings layer.
+- ⚠️ Pin discipline: any new dep that requires a TS major bump triggers a check of the
+  lint peer range.
 
 ## Alternatives considered
-- **Go for API + TS for web**: rejected for monorepo simplicity and shared domain package.
-- **Bun runtime**: not yet — Node LTS has the long-tail ecosystem (node:crypto, sails of
-  pg/redis drivers).
+
+- **Go/Python for the engine + TS for web**: rejected — the engine drives a browser via
+  Playwright, whose first-class API is TypeScript; a second language buys nothing here.
+- **Bun runtime**: not yet — Node LTS has the long-tail ecosystem (node:crypto, pg drivers).
 
 ## References
-- Spec §7 Stack, §64 Code rules
-- [[Alpha Graph Code]] diary entry — TypeScript 5.9.3 rationale
+
+- ADR-0007 (browser execution)

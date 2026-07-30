@@ -33,8 +33,8 @@ declare module 'fastify' {
       organizationId?: OrganizationId;
     };
     /** Set by `auditPreHandler`. Internal — do not read in handlers. */
-    _cloudCorrelation?: string;
-    _cloudIp?: string | null;
+    _correlationId?: string;
+    _clientIp?: string | null;
   }
 }
 
@@ -55,8 +55,8 @@ export function auditPreHandler(
   return async (request, _reply) => {
     if (!MUTATING_METHODS.has(request.method)) return;
     const { correlationId, ip } = correlationFromRequest(request);
-    request._cloudCorrelation = correlationId;
-    request._cloudIp = ip;
+    request._correlationId = correlationId;
+    request._clientIp = ip;
     if (!request.auditPatch) {
       request.auditPatch = { action: `${request.method} ${request.url}` };
     }
@@ -75,13 +75,13 @@ export function auditOnSend(
     if (!MUTATING_METHODS.has(request.method)) return payload;
     const patch = request.auditPatch;
     if (!patch) return payload;
-    const cloud = request.cloud;
-    const correlation = request._cloudCorrelation ?? randomUUID();
-    const ip = request._cloudIp ?? null;
+    const auth = request.auth;
+    const correlation = request._correlationId ?? randomUUID();
+    const ip = request._clientIp ?? null;
     try {
       await repos.audit.insert({
-        organizationId: patch.organizationId ?? cloud?.tenant?.organizationId ?? null,
-        actorId: cloud?.user?.id ?? null,
+        organizationId: patch.organizationId ?? auth?.tenant?.organizationId ?? null,
+        actorId: auth?.user?.id ?? null,
         action: patch.action,
         resourceType: patch.resourceType ?? null,
         resourceId: patch.resourceId ?? null,

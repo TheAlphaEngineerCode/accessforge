@@ -4,8 +4,8 @@
  * Usage:
  *   app.post('/deployments', { preHandler: [requireAuth, requirePermission('deployment.create')] }, handler)
  *
- * The tenant middleware runs first (registered at app-level), populating `request.cloud`.
- * These decorators read from `request.cloud` and never revalidate the session cookie.
+ * The tenant middleware runs first (registered at app-level), populating `request.auth`.
+ * These decorators read from `request.auth` and never revalidate the session cookie.
  */
 import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 import { can } from '@accessforge/permissions';
@@ -20,15 +20,15 @@ type AsyncPreHandler = (request: FastifyRequest, reply: FastifyReply) => Promise
 
 /** 401 unless the request carries an authenticated user. */
 export const requireAuth: AsyncPreHandler = async (request, _reply) => {
-  if (!request.cloud.user) throw new Unauthorized();
+  if (!request.auth.user) throw new Unauthorized();
 };
 
 /** 401 if no user; 403 if no tenant or missing the permission. */
 export function requirePermission(permission: Permission): AsyncPreHandler {
   return async (request, _reply) => {
-    if (!request.cloud.user) throw new Unauthorized();
-    if (!request.cloud.tenant) throw new Forbidden('no active tenant');
-    if (!can(request.cloud.tenant.role, permission)) {
+    if (!request.auth.user) throw new Unauthorized();
+    if (!request.auth.tenant) throw new Forbidden('no active tenant');
+    if (!can(request.auth.tenant.role, permission)) {
       throw new Forbidden(`missing permission: ${permission}`);
     }
   };
@@ -36,18 +36,18 @@ export function requirePermission(permission: Permission): AsyncPreHandler {
 
 /** 401 if no user; 403 if tenant === null OR role !== ROLE.OWNER. */
 export const requireOwner: AsyncPreHandler = async (request, _reply) => {
-  if (!request.cloud.user) throw new Unauthorized();
-  if (!request.cloud.tenant) throw new Forbidden('no active tenant');
-  if (request.cloud.tenant.role !== 'OWNER') {
+  if (!request.auth.user) throw new Unauthorized();
+  if (!request.auth.tenant) throw new Forbidden('no active tenant');
+  if (request.auth.tenant.role !== 'OWNER') {
     throw new Forbidden('owner-only action');
   }
 };
 
 /** 401 if no user; 403 if tenant === null OR role not in ADMIN/OWNER. */
 export const requireAdmin: AsyncPreHandler = async (request, _reply) => {
-  if (!request.cloud.user) throw new Unauthorized();
-  if (!request.cloud.tenant) throw new Forbidden('no active tenant');
-  if (request.cloud.tenant.role !== 'OWNER' && request.cloud.tenant.role !== 'ADMIN') {
+  if (!request.auth.user) throw new Unauthorized();
+  if (!request.auth.tenant) throw new Forbidden('no active tenant');
+  if (request.auth.tenant.role !== 'OWNER' && request.auth.tenant.role !== 'ADMIN') {
     throw new Forbidden('admin-only action');
   }
 };

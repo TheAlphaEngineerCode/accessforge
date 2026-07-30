@@ -1,7 +1,7 @@
 /**
  * @accessforge/logger — thin wrapper around pino with structured fields for the platform.
  *
- * The default export is a shared logger bound to `service.name=cloud`; modules create
+ * The default export is a shared logger bound to `service.name=accessforge`; modules create
  * child loggers with `log.child({ module: 'inventory' })` rather than instantiating
  * their own.
  */

@@ -305,6 +305,14 @@ export interface Repositories {
   issues: IssueRepository;
   journeys: JourneyRepository;
   journeySteps: JourneyStepRepository;
+  /**
+   * Run `fn` against a repository set bound to a single database transaction —
+   * everything commits or rolls back together. The in-memory implementation has
+   * no rollback; it exists so handlers can be written against one contract.
+   */
+  withTransaction<T>(fn: (repos: Repositories) => Promise<T>): Promise<T>;
+  /** Cheap connectivity probe for readiness checks. Throws when the store is down. */
+  ping(): Promise<void>;
 }
 
 export type { AuditEventId, EventId, ScanStatus, ScanType };

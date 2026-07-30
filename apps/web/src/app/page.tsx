@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 /**
  * Landing page — minimal entry for Phase 0. The Phase 1 auth pages live under
- * `/login` and `/dashboard`. Phase 4+ replaces this with the live topology overview.
+ * `/login` and `/dashboard`. Phase 2+ replaces this with the scan overview.
  */
 export default function HomePage() {
   return (
@@ -16,9 +16,9 @@ export default function HomePage() {
     >
       <h1 style={{ fontSize: '2.2rem', marginBottom: '0.4rem' }}>AccessForge</h1>
       <p style={{ marginTop: 0, marginBottom: '2rem', opacity: 0.8 }}>
-        Cloud Infrastructure Control Plane — open source platform for managing, automating and
-        observing cloud, containers, Kubernetes and on-prem infrastructure in a single operational
-        layer.
+        Accessibility Journey Testing — open source platform for analyzing, testing, monitoring and
+        preventing accessibility problems in web applications, validating that real people can
+        complete real flows.
       </p>
       <p>
         <Link href="/login" style={{ color: '#7ab7ff', textDecoration: 'none', fontWeight: 600 }}>
@@ -26,8 +26,8 @@ export default function HomePage() {
         </Link>
       </p>
       <p style={{ opacity: 0.6, fontSize: '0.92rem' }}>
-        Phase 0–1 foundation. The full topology, FinOps, security, IaC and automation surfaces land
-        in Phases 2–12. See <code>IMPLEMENTATION_STATUS.md</code>.
+        Phase 0–1 foundation. Scans, rule engines, keyboard testing, journeys and reports land in
+        Phases 2–13. See <code>IMPLEMENTATION_STATUS.md</code>.
       </p>
     </main>
   );
